@@ -1,0 +1,24 @@
+homeassistant: true
+permit_join: true
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost'
+serial:
+  port: /dev/ttyUSB0
+advanced:
+  rtscts: false
+devices:
+  '0x00158d00047b5824':
+    friendly_name: temperature_humidity_living-room/SENSOR
+  '0x00158d0002520b26':
+    friendly_name: door_window_living-room/SENSOR
+  '0x00158d0002567d32':
+    friendly_name: motion_living-room/SENSOR
+  '0x00158d0003cc4e70':
+    friendly_name: motion_bedroom/SENSOR
+  '0x00158d000395b3a6':
+    friendly_name: motion_kitchen/SENSOR
+  '0x00158d00047b835a':
+    friendly_name: temperature_humidity_kitchen/SENSOR
+  '0x00158d000290b6d5':
+    friendly_name: door_window_bedroom/SENSOR

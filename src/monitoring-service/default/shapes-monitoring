@@ -1,0 +1,14 @@
+UUID=03aa4228-b951-4f0f-bf38-0e4651164729
+CONFDIR=/usr/share/shapes-monitoring
+CONFFILE=/etc/shapes-monitoring/configuration.conf
+
+DATASOURCEDEF=/usr/share/shapes-monitoring/datasources/shapes-monitoring-datasource.yaml
+DASHBOARDPROVDEF=/usr/share/shapes-monitoring/dashboards/shapes-monitoring-dashboard.yaml
+DASHBOARDDEF=/usr/share/shapes-monitoring/dashboards/shapes-monitoring-dashboard.json
+
+PROVISION_DIR=/etc/grafana/provisioning
+DATASOURCEFILE=/etc/grafana/provisioning/datasources/shapes-monitoring-datasource.yaml
+DASHBOARDPROVFILE=/etc/grafana/provisioning/dashboards/shapes-monitoring-dashboard.yaml
+DASHBOARDDIR=/var/lib/grafana/dashboards
+
+GRAFANACONF=/etc/grafana/grafana.ini

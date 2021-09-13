@@ -1,0 +1,49 @@
+.\" Manpage for nuseradd.
+.\" Contact vivek@nixcraft.net.in to correct errors or typos.
+.TH "SHAPES-MONITORING" "1" "May 04, 2021" "" "Shapes Monitoring System Manual"
+.SH NAME
+\fBshapes-monitoring-service\fR - Monitoring system for smart sensors 
+.SH SYNOPSIS
+shapes-monitoring [-u|-s|-r|-e] [-v] [-h]
+.SH DESCRIPTION
+Monitoring system that collects the data emitted by smart sensors and displays them in an intuitive way for the user. 
+.SH USAGE
+Edit the configuration file with \fBsudo shapes-monitoring \-e\fR with the right values and execute:
+
+  \fB$ sudo shapes-monitoring \-u\fR
+  Connected to http://localhost:8086 version 1.8.5
+    InfluxDB shell version: 1.6.4
+    > create database zigbee2mqtt
+    > use zigbee2mqtt
+    Using database zigbee2mqtt
+    > create user telegraf with password 'telegraf' with all privileges
+    > grant all on zigbee2mqtt to telegraf
+    > exit
+  Database checked!
+  Done updating!
+  \fB$ sudo shapes-monitoring \-s\fR
+  Datasource provider file at /etc/grafana/provisioning/datasources/shapes-monitoring-datasource.yaml
+  Dashboard provider file at /etc/grafana/provisioning/dashboards/shapes-monitoring-dashboard.yaml
+  Found dashboard definition at /var/lib/grafana/dashboards/shapes-monitoring-dashboard.json:
+         Name: smart-sensors   
+  Available panels:
+          ID: 1 Description: Bathroom sensors
+          ID: 2 Description: Living room sensors
+          ID: 3 Description: Bedroom sensors
+          ID: 4 Description: Kitchen sensors
+
+\fBNOTE:\fR The user provided on the configuration file \fBshould have only\fR CONNECT and SELECT privileges as Grafana 
+do not validate that queries are safe\.
+
+.SH OPTIONS
+  -u  Update the configuration files. Create them if they not exists.
+  -s  Show provision files generated location and dashboards information.
+  -r  Removes any generated configuration andd reverts modifications.
+  -e  Edit configuration file with nano
+  -v  Increase the level of verbosity. 
+  -h, --help  Open this page.
+.SH AUTHOR
+María Espinosa Astilleros (Maria.Espinosa@uclm.es)
+
+.SH COPYRIGHT
+Copyright © 2021 María Espinosa Astilleros

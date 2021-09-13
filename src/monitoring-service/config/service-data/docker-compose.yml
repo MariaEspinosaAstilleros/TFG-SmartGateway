@@ -1,0 +1,40 @@
+version: '3'
+services:
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    network_mode: host
+    restart: always
+    
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - ./zigbee2mqtt-data:/app/data
+      - /run/udev:/run/udev:ro
+      - ./log:/root/.npm/_logs
+    devices:
+      - /dev/ttyUSB0:/dev/ttyACM0
+    restart: always
+    network_mode: host
+    privileged: true
+    environment:
+      - TZ=Europe/Madrid
+  
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    volumes: 
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf
+    depends_on:
+            - influxdb
+    network_mode: host
+
+  influxdb:
+    container_name: influxdb
+    image: hypriot/rpi-influxdb:latest
+    ports:
+            - "8086:8086"
+    volumes:
+            - /var/lib/influxdb
+            - ./influxdb.conf:/etc/influxdb/influxdb.conf

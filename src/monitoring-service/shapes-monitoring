@@ -1,0 +1,254 @@
+#!/bin/bash
+# set -x
+
+function debug() {
+    if [ "$#" -ne 1 ]; then
+        return
+    elif [ "$VERBOSE" -lt 1 ]; then
+        return
+    fi
+    echo -e "DEBUG: ${1}"
+}
+
+function info() {
+    if [ "$#" -ne 1 ]; then
+        return
+    fi
+    echo -e "INFO: ${1}"
+}
+
+function error() {
+    if [ "$#" -ne 1 ]; then
+        return
+    fi
+    echo -e "ERROR: ${1}" >&2
+}
+
+function check_database() {
+    debug "Checking database with influx"
+    influx -database $DBNAME -host $DBHOST -port $DBPORT 
+
+    RESULT=$?
+    if [ $RESULT -eq 1 ]
+    then
+        error "Database server specified in $CONFFILE is not accepting connections"
+        rm -f $CONFDIR/.pgpass
+        export PGPASSFILE=
+        exit 1
+    elif [ $RESULT -eq 2 ]
+    then
+        error "Database server specified in $CONFFILE do not respond"
+        rm -f $CONFDIR/.pgpass
+        export PGPASSFILE=
+        exit 1
+    fi
+    debug "Done."
+    info "Database checked!"
+}
+
+function update() {
+    debug "Restarting grafana-server service..."
+    systemctl start grafana-server
+    sleep 2
+    source $CONFFILE
+    debug "Creating database authentication file at $CONFDIR/.pgpass"
+    echo "$DBHOST:$DBPORT:$DBNAME:$DBUSER:$DBPASSWORD" > $CONFDIR/.pgpass
+    chmod 600 $CONFDIR/.pgpass
+    export PGPASSFILE=$CONFDIR/.pgpass
+    check_database
+    if [ ! -f $GRAFANACONF.bak ]
+    then
+        debug "Creating backup for $GRAFANACONF..."
+        cp $GRAFANACONF $GRAFANACONF.bak
+        debug "Modifing $GRAFANACONF..."
+        sed -i "s/^;\?provisioning \?= \?.*$/provisioning = $(echo $PROVISION_DIR | sed -e 's/[/]/\\\//g')/" $GRAFANACONF
+        sed -i "s/^;\?allow_embedding \?= \?.*$/allow_embedding = true/" $GRAFANACONF
+        sed -i "$(sudo grep -n 'auth.anonymous' $GRAFANACONF | cut -d':' -f1),\
+        $(sudo grep -n 'auth.github' $GRAFANACONF | cut -d':' -f1)\
+        s/;\?enabled \?= \?.*$/enabled = true/" $GRAFANACONF
+        debug "Restarting grafana-server service..."
+        systemctl restart grafana-server
+        sleep 2
+    fi
+
+    if [ ! -f $DATASOURCEFILE ]
+    then
+        debug "Creating $DATASOURCEFILE..."
+        cp $DATASOURCEDEF $DATASOURCEFILE
+    fi
+    DATASOURCE_UUID=$(uuidgen -m -n $UUID -N $(basename $DATASOURCEFILE))
+    debug "Datasource with uuid $DATASOURCE_UUID"
+    sed -i "s/uid:.*/uid: $DATASOURCE_UUID/" $DATASOURCEFILE
+    sed -i "s/url:.*:[0-9]*/url: $DBHOST:$DBPORT/" $DATASOURCEFILE
+    sed -i "s/database:.*/database: $DBNAME/" $DATASOURCEFILE
+    sed -i "s/user:.*/user: $DBUSER/" $DATASOURCEFILE
+    sed -i "s/password:.*/password: $DBPASSWORD/" $DATASOURCEFILE
+    if [ ! -f $DASHBOARDPROVFILE ]
+    then
+        debug "Creating $DASHBOARDPROVFILE..."
+        cp $DASHBOARDPROVDEF $DASHBOARDPROVFILE
+    fi
+
+    if [ ! -d $DASHBOARDDIR ]
+    then
+        debug "Creating $DASHBOARDDIR..."
+        mkdir $DASHBOARDDIR
+        cp $DASHBOARDDEF $DASHBOARDDIR
+    fi
+
+    info "Done updating!"
+}
+
+function show() {
+    if [ -e $DATASOURCEFILE ]
+    then
+        info "Datasource provider file at $DATASOURCEFILE"
+    else
+        error "There is not datasource provider file! Execute 'shapes-monitoring -u'"
+        return
+    fi
+    if [ -e $DASHBOARDPROVFILE ]
+    then
+        info "Dashboard provider file at $DASHBOARDPROVFILE"
+    else
+        error "There is not dashboard provider file! Execute 'shapes-monitoring -u'"
+        return
+    fi
+    if [ ! -e $DASHBOARDDIR ]; then
+        error "There is not dashboards directory! Execute 'shapes-monitoring -u'"
+        return
+    fi
+    
+    info "Found dashboard definition at $DASHBOARDDIR/shapes-monitoring-dashboard.json:"
+    info "\tName: $(grep -i '"title".*sensors' $DASHBOARDDIR/shapes-monitoring-dashboard.json | cut -d':' -f2 | \
+            sed 's/"//g' | sed 's/ - /-/' | sed 's/ //' | \
+            sed 'y/ /-/' | sed 's/,//g' | tr '[:upper:]' '[:lower:]')"
+    info "\tUID: $(grep 'uid' $DASHBOARDDIR/shapes-monitoring-dashboard.json  | cut -d':' -f2 | \
+        sed 's/"//g' | sed 's/ //g' | sed 's/,//g')"
+
+    info "Available panels:"
+    info "\tID: 1\tDescription: Bathroom sensors"
+    info "\tID: 2\tDescription: Living room sensors"
+    info "\tID: 3\tDescription: Bedroom sensors"
+    info "\tID: 4\tDescription: Kitchen sensors"
+}
+
+function edit_config() {
+    nano $CONFFILE
+    exit $?
+}
+
+function help() {
+    man shapes-monitoring
+}
+
+function reset() {
+    debug "Removing $DASHBOARDDIR..."
+    rm -drf $DASHBOARDDIR
+    debug "Removing $DASHBOARDPROVFILE..."
+    debug "Removing $DATASOURCEFILE..."
+    rm -f $DASHBOARDPROVFILE $DATASOURCEFILE
+    debug "Restarting grafana-server service..."
+    systemctl restart grafana-server
+    sleep 2
+    if [ -e $GRAFANACONF.bak ]
+    then
+        debug "Restoring $GRAFANACONF..."
+        mv $GRAFANACONF.bak $GRAFANACONF
+        systemctl restart grafana-server
+        sleep 2
+    else
+        error "Could not find backup for ${GRAFANACONF}"
+    fi
+    info "Done reseting!"
+}
+
+function check_admin() {
+    if [ `id -u` -ne 0 ]
+    then
+        echo "You need root privileges to run this script"
+        exit 1
+    fi
+}
+
+check_admin
+
+if [ ! -f /etc/default/shapes-monitoring ]
+then
+    error "Environment file 'shapes-monitoring' dont exist on /etc/default!"
+    exit 1
+fi
+
+source /etc/default/shapes-monitoring
+
+if [ ! -f "$CONFFILE" ]
+then
+    error "$(basename $CONFFILE) dont exist on $(dirname $CONFDIR)!"
+    error "An example is in $REPOSITORY/$(basename $CONFFILE)"
+    exit 1
+elif [ ! -f "$DATASOURCEDEF" ]
+then
+    error "$(basename $DATASOURCEDEF) dont exist on $CONFDIR!"
+    error "An example is in $REPOSITORY/files/$(basename $DATASOURCEDEF)"
+    exit 1
+elif [ ! -f "$DASHBOARDPROVDEF" ]
+then
+    error "$(basename $DASHBOARDPROVDEF) dont exist on $CONFDIR!"
+    error "An example is in $REPOSITORY/files/$(basename $DASHBOARDPROVDEF)"
+    exit 1
+elif [ ! -f "$DASHBOARDDEF" ]
+then
+    error "$(basename $DASHBOARDDEF) dont exist on $CONFDIR!"
+    error "An example is in $REPOSITORY/files/$(basename $DASHBOARDDEF)"
+    exit 1
+fi
+
+if [ "$#" -eq 0 ]
+then
+    show
+    exit 0
+elif [ "$#" -gt 2 ]
+then
+    error "Incorrect number of arguments."
+    error "Use --help to see usage."
+    exit 1
+fi
+
+VERBOSE=0
+ACTION=""
+
+for arg in "$@"; do
+    if [ "$arg" = "-v" ]; then
+        VERBOSE=1
+    elif [ "$arg" = "-u" -o "$arg" = "-s" -o "$arg" = "-r" -o "$arg" = "-e" ]; then
+        if [ "$ACTION" != "" ]; then
+            error "Only one of -u, -s, -r, -e is allowed"
+            error "Use --help to see usage." >&2
+            exit 1
+        fi
+        ACTION="$arg"
+    elif [ "$arg" = "-h" -o "$1" = "--help" ]; then
+        help
+        exit 0
+    else
+        error "Unknown argument." >&2
+        error "Use --help to see usage." >&2
+        exit 1
+    fi
+done
+
+if [ "$ACTION" = "-u" ]; then
+    update
+elif [ "$ACTION" = "-s" -o "$ACTION" = "" ]; then
+    show
+elif [ "$ACTION" = "-r"  ]; then
+    reset
+elif [ "$ACTION" = "-e" ]; then
+    edit_config
+else
+    error "Unknown argument." >&2
+    error "Use --help to see usage." >&2
+    exit 1
+fi
+
+exit 0

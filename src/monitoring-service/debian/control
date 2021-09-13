@@ -1,0 +1,14 @@
+Source: shapes-monitoring-service
+Section: utils
+Priority: optional
+Maintainer: María Espinosa Astilleros <mariaespinasti@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), debhelper-compat (= 12), quilt, python3, dh-python
+Standards-Version: 4.5.0
+
+Package: shapes-monitoring-service
+Architecture: all
+Depends: ${misc:Depends}, python3, docker.io, docker-compose, influxdb-client, python3-influxdb, nano, grafana
+Description: Monitoring system for smart sensors
+	This package presents a monitoring system that collects
+	the data emitted by smart sensors and displays them in 
+	an intuitive way for the user. This service runs in background. 
