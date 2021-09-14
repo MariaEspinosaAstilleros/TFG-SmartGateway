@@ -1,6 +1,13 @@
 ## monitoring-service - Monitoring system for smart sensors
 Monitoring system that collects the data emitted by smart sensors and displays them in an intuitive way for the user
 
+### Tools 🛠️
+* A suported ZigBee adapter (zzh!)
+* One or more suported ZigBee device/s
+* A Raspberry Pi 4 *(optional)*
+* The `shapes-monitoring-system` debian package, which will configure ZigBee2MQTT, Mosquitto, InfluxDB, Telegraf and Grafana, available in [ARCO package repository](https://uclm-arco.github.io/debian/)
+* Grafana APT repository, the latest OSS release, available in this [download link](https://grafana.com/docs/grafana/latest/installation/debian/)
+
 ### Install
 As a first step, the ARCO group repository is added
 ``` shell
