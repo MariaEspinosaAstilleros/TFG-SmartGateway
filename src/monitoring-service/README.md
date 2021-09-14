@@ -2,7 +2,7 @@
 Monitoring system that collects the data emitted by smart sensors and displays them in an intuitive way for the user
 
 ### Tools 🛠️
-* A suported ZigBee adapter (zzh!)
+* A suported ZigBee adapter, such as zzh!
 * One or more suported ZigBee device/s
 * A Raspberry Pi 4 *(optional)*
 * The `shapes-monitoring-system` debian package, which will configure ZigBee2MQTT, Mosquitto, InfluxDB, Telegraf and Grafana, available in [ARCO package repository](https://uclm-arco.github.io/debian/)
