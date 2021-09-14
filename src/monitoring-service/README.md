@@ -8,7 +8,7 @@ Monitoring system that collects the data emitted by smart sensors and displays t
 * The `shapes-monitoring-system` debian package, which will configure ZigBee2MQTT, Mosquitto, InfluxDB, Telegraf and Grafana, available in [ARCO package repository](https://uclm-arco.github.io/debian/)
 * Grafana APT repository, the latest OSS release, available in this [download link](https://grafana.com/docs/grafana/latest/installation/debian/)
 
-### Install
+### Install ⬇️ 
 As a first step, the ARCO group repository is added
 ``` shell
 pi@raspberrypi:~$ sudo apt-key adv --fetch -keys https://uclm-arco.github.io/debian/uclm-arco.asc
@@ -44,7 +44,7 @@ and the `paho-mqtt` library as it is used in the MQTT client
 pi@raspberrypi:~$ pip3 install paho-mqtt
 ```
 
-### Usage 
+### Usage ⚙️
 Considering that the installation has been carried out correctly, we now move on the running the monitoring system. To do this, we first generate the existing dependency trees in `systemd`
 
 ```shell
@@ -120,7 +120,7 @@ Sensor data published to zigbee2mqtt/smart-sensors/living-room topic!
 
 By following these steps, you are ready to enter Grafana's [graphical interface](https://localhost:3000) and view the metrics collected about the home environment and the behaviour of the person in his or her home.
 
-### Dashboards visualization 
+### Dashboards visualization 📊
 
 * Bathroom sensors 
 ![Texto alternativo](./img/dashboard-bathroom.png)
